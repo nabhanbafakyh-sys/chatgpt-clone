@@ -1,125 +1,21 @@
 import 'package:ai/view_model/chat_vm.dart';
+import 'package:ai/widgets/ai_message.dart';
+import 'package:ai/widgets/drawer.dart';
+import 'package:ai/widgets/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ChatScreen extends StatelessWidget {
   ChatScreen({super.key});
 
-  final TextEditingController controller = TextEditingController();
   final ScrollController scrollController = ScrollController();
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<ChatViewModel>(context);
-
+    final controller = vm.textController;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      drawer: Drawer(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.only(
-                top: 60,
-                left: 16,
-                right: 16,
-                bottom: 16,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "ChatGPT",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  IconButton(onPressed: () {}, icon: Icon(Icons.search)),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.auto_stories_outlined),
-                    title: Text(
-                      "Library",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {},
-                  ),
-
-                  ListTile(
-                    leading: Icon(Icons.folder_outlined),
-                    title: Text(
-                      "Projects",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {},
-                  ),
-
-                  ListTile(
-                    leading: Icon(Icons.schedule_outlined),
-                    title: Text(
-                      "Scheduled",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {},
-                  ),
-
-                  ListTile(
-                    leading: Icon(Icons.apps_outlined),
-                    title: Text(
-                      "Apps",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {},
-                  ),
-
-                  ListTile(
-                    leading: Icon(Icons.image_outlined),
-                    title: Text(
-                      "Images",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {},
-                  ),
-
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Text(
-                      "Recent",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(color: Theme.of(context).colorScheme.surface, height: 1),
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const CircleAvatar(radius: 18, child: Text("ZN")),
-                  SizedBox(width: 12),
-
-                  Expanded(
-                    child: Text(
-                      "Zyd Nabhan",
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ),
-
-                  IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      drawer: const ChatDrawer(),
 
       appBar: AppBar(
         centerTitle: false,
@@ -184,7 +80,7 @@ class ChatScreen extends StatelessWidget {
                               ).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(24),
                             ),
-                            child: Text(
+                            child: SelectableText(
                               msg.message,
                               style: const TextStyle(
                                 fontSize: 16,
@@ -195,28 +91,11 @@ class ChatScreen extends StatelessWidget {
                         );
                       }
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          msg.message,
-                          style: const TextStyle(fontSize: 16, height: 1.5),
-                        ),
-                      );
+                      return AiMessage(message: msg.message);
                     },
                   ),
           ),
-
-          if (vm.isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Thinking...",
-                  style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
-                ),
-              ),
-            ),
+          if (vm.isLoading) ThinkingIndicator(),
 
           Container(
             margin: const EdgeInsets.all(12),
@@ -228,35 +107,62 @@ class ChatScreen extends StatelessWidget {
             child: Row(
               children: [
                 IconButton(onPressed: () {}, icon: const Icon(Icons.add)),
-
                 Expanded(
                   child: TextField(
+                    onSubmitted: (value) async {
+                      if (value.trim().isEmpty) return;
+
+                      await vm.sendMessage(value);
+                      controller.clear();
+                    },
                     controller: controller,
+                    minLines: 1,
+                    maxLines: 6,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
                       hintText: "Ask anything",
                       border: InputBorder.none,
                     ),
                   ),
                 ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: vm.hasText
+                      ? Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () async {
+                              await vm.sendMessage(controller.text);
+                              controller.clear();
 
-                IconButton(onPressed: () {}, icon: const Icon(Icons.mic_none)),
-
-                IconButton(
-                  onPressed: () async {
-                    await vm.sendMessage(controller.text);
-                    controller.clear();
-
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (scrollController.hasClients) {
-                        scrollController.animateTo(
-                          scrollController.position.maxScrollExtent,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    });
-                  },
-                  icon: const Icon(Icons.arrow_upward),
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (scrollController.hasClients) {
+                                  scrollController.animateTo(
+                                    scrollController.position.maxScrollExtent,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
+                              });
+                            },
+                            icon: Icon(
+                              Icons.arrow_upward,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              size: 20,
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          key: const ValueKey("mic"),
+                          onPressed: () {},
+                          icon: const Icon(Icons.mic_none),
+                        ),
                 ),
               ],
             ),

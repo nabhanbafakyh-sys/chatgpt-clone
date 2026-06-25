@@ -19,7 +19,12 @@ class GroqService {
         data: {"model": "llama-3.3-70b-versatile", "messages": messages},
       );
 
-      return response.data["choices"][0]["message"]["content"];
+      final content = response.data["choices"][0]["message"]["content"];
+
+      print("RAW RESPONSE:");
+      print(content);
+
+      return content;
     } catch (e) {
       return "Error: $e";
     }
