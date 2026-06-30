@@ -23,7 +23,7 @@ class AiMessage extends StatelessWidget {
               configs: [
                 PreConfig.darkConfig.copy(
                   wrapper: (child, code, language) {
-                    return ChatCodeBlock(child: child, code: code);
+                    return ChatCodeBlock(code: code, child: child);
                   },
                 ),
 

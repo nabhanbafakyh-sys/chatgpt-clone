@@ -1,12 +1,20 @@
+import 'package:ai/model/chat_model.dart';
+import 'package:ai/model/message_model.dart';
 import 'package:ai/view/chat_screen.dart';
 import 'package:ai/view_model/chat_vm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
 
+  Hive.registerAdapter(MessageModelAdapter());
+  Hive.registerAdapter(ChatModelAdapter());
+
+  await Hive.openBox<ChatModel>("chat_box");
   await dotenv.load(fileName: ".env");
   runApp(
     ChangeNotifierProvider(create: (_) => ChatViewModel(), child: MyApp()),

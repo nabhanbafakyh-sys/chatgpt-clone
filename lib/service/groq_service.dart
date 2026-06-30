@@ -6,7 +6,10 @@ class GroqService {
 
   final String apiKey = dotenv.env['groq_api'] ?? '';
 
-  Future<String> sendMessage(List<Map<String, String>> messages) async {
+  Future<String> sendMessage({
+    required String model,
+    required List<Map<String, String>> messages,
+  }) async {
     try {
       final response = await dio.post(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -16,15 +19,10 @@ class GroqService {
             "Content-Type": "application/json",
           },
         ),
-        data: {"model": "llama-3.3-70b-versatile", "messages": messages},
+        data: {"model": model, "messages": messages},
       );
 
-      final content = response.data["choices"][0]["message"]["content"];
-
-      print("RAW RESPONSE:");
-      print(content);
-
-      return content;
+      return response.data["choices"][0]["message"]["content"];
     } catch (e) {
       return "Error: $e";
     }

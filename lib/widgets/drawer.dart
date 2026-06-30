@@ -1,4 +1,6 @@
+import 'package:ai/view_model/chat_vm.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ChatDrawer extends StatelessWidget {
   const ChatDrawer({super.key});
@@ -31,22 +33,53 @@ class ChatDrawer extends StatelessWidget {
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
-              children: const [
-                _DrawerTile(
+              children: [
+                const _DrawerTile(
                   icon: Icons.auto_stories_outlined,
                   title: "Library",
                 ),
-                _DrawerTile(icon: Icons.folder_outlined, title: "Projects"),
-                _DrawerTile(icon: Icons.schedule_outlined, title: "Scheduled"),
-                _DrawerTile(icon: Icons.apps_outlined, title: "Apps"),
-                _DrawerTile(icon: Icons.image_outlined, title: "Images"),
+                const _DrawerTile(
+                  icon: Icons.folder_outlined,
+                  title: "Projects",
+                ),
+                const _DrawerTile(
+                  icon: Icons.schedule_outlined,
+                  title: "Scheduled",
+                ),
+                const _DrawerTile(icon: Icons.apps_outlined, title: "Apps"),
+                const _DrawerTile(icon: Icons.image_outlined, title: "Images"),
 
-                Padding(
+                const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Text(
                     "Recent",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
+                ),
+
+                Consumer<ChatViewModel>(
+                  builder: (context, vm, child) {
+                    return Column(
+                      children: vm.chats
+                          .where((chat) => chat.messages.isNotEmpty)
+                          .map((chat) {
+                            return ListTile(
+                              leading: const Icon(Icons.chat_bubble_outline),
+                              title: Text(
+                                chat.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              selected: vm.currentChat == chat,
+                              onTap: () {
+                                vm.openChat(chat);
+                                Navigator.pop(context);
+                              },
+                            );
+                          })
+                          .toList(),
+                    );
+                  },
                 ),
               ],
             ),

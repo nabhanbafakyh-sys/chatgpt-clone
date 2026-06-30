@@ -1,7 +1,10 @@
 import 'package:ai/view_model/chat_vm.dart';
 import 'package:ai/widgets/ai_message.dart';
+import 'package:ai/widgets/ask_bar.dart';
 import 'package:ai/widgets/drawer.dart';
 import 'package:ai/widgets/loading_indicator.dart';
+import 'package:ai/widgets/mode_selecter.dart';
+import 'package:ai/widgets/model_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,10 +12,12 @@ class ChatScreen extends StatelessWidget {
   ChatScreen({super.key});
 
   final ScrollController scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<ChatViewModel>(context);
     final controller = vm.textController;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: const ChatDrawer(),
@@ -42,6 +47,7 @@ class ChatScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.auto_awesome, size: 50),
+
                         SizedBox(height: 20),
 
                         Text(
@@ -66,9 +72,9 @@ class ChatScreen extends StatelessWidget {
                           alignment: Alignment.centerRight,
                           child: Container(
                             margin: const EdgeInsets.only(
+                              left: 60,
                               top: 8,
                               bottom: 8,
-                              left: 60,
                             ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 14,
@@ -82,10 +88,7 @@ class ChatScreen extends StatelessWidget {
                             ),
                             child: SelectableText(
                               msg.message,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                              ),
+                              style: const TextStyle(fontSize: 16),
                             ),
                           ),
                         );
@@ -95,77 +98,46 @@ class ChatScreen extends StatelessWidget {
                     },
                   ),
           ),
-          if (vm.isLoading) ThinkingIndicator(),
 
-          Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          if (vm.isLoading) const ThinkingIndicator(),
+          ChatInputBar(
+            modeSelector: ModeSelector(
+              mode: vm.selectedMode,
+              selectedAgent: vm.selectedAgent,
+              onModeChanged: vm.changeMode,
+              onAgentChanged: vm.changeAgent,
             ),
-            child: Row(
-              children: [
-                IconButton(onPressed: () {}, icon: const Icon(Icons.add)),
-                Expanded(
-                  child: TextField(
-                    onSubmitted: (value) async {
-                      if (value.trim().isEmpty) return;
 
-                      await vm.sendMessage(value);
-                      controller.clear();
-                    },
-                    controller: controller,
-                    minLines: 1,
-                    maxLines: 6,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      hintText: "Ask anything",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: vm.hasText
-                      ? Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            onPressed: () async {
-                              await vm.sendMessage(controller.text);
-                              controller.clear();
-
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (scrollController.hasClients) {
-                                  scrollController.animateTo(
-                                    scrollController.position.maxScrollExtent,
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOut,
-                                  );
-                                }
-                              });
-                            },
-                            icon: Icon(
-                              Icons.arrow_upward,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              size: 20,
-                            ),
-                          ),
-                        )
-                      : IconButton(
-                          key: const ValueKey("mic"),
-                          onPressed: () {},
-                          icon: const Icon(Icons.mic_none),
-                        ),
-                ),
-              ],
+            modelSelector: ModelSelector(
+              selectedModel: vm.selectedModel,
+              onChanged: vm.changeModel,
             ),
+
+            controller: controller,
+
+            hasText: vm.hasText,
+
+            onSend: () async {
+              if (controller.text.trim().isEmpty) return;
+
+              await vm.sendMessage(controller.text);
+
+              controller.clear();
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (scrollController.hasClients) {
+                  scrollController.animateTo(
+                    scrollController.position.maxScrollExtent,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+              });
+            },
+
+            onMic: () {
+              // Voice feature later
+            },
           ),
         ],
       ),
